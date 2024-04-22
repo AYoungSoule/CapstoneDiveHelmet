@@ -1,9 +1,9 @@
-O2P = 8 #will be the actual data from the Oxygen pressure sensor
-WP = 7 #Will be the actual data from the water pressure sensor
-ZA = 9.8 #will be the actual descent acceleration from the accelerometer
+O2PI = 8 #will be the actual data from the Oxygen pressure sensor
+WPL = [7] #Will be the actual data from the water pressure sensor
+ZAL = [9.8] #will be the actual descent acceleration from the accelerometer meter per sec
 TV = 425 #will be replaced with actual volume of available oxygen tank
-O2VS = TV
-O2V = O2VS #Calcultion of volume of tank filled with oxygen
+O2V = TV
+O2PIL = []
 BR = [15, 15, 15, 15, 15, 15]
 BRA = sum(BR)/len(BR) #This is the list and average of said list that will be used to determine the average breathing rate of the user which helps tell how much time is left in trip
 ROT = O2V/3 
@@ -12,35 +12,31 @@ ER = ROT
 AT = ROT #These are the rule of threes designated oxygen per section of trip amounts based on your starting oxygen volume
 DDT = DT/BRA #this tells you how much time you have for your descent trip
 DAT = AT/BRA
-RDR = 18/60 #recomended average descent rate as we do not have access to the algorithims and mathmatical equations that dive computers use to calculate that stuff
-RAR = 9/60 #same as descent but for ascent
+RDR = 18 #recomended average descent rate as we do not have access to the algorithims and mathmatical equations that dive computers use to calculate that stuff in m per sec
+RAR = 9 #same as descent but for ascent meters per min
 ASS_D = 5
 ASS_T = 5 #these are the ascent safety stops recomended distances and times
 CD = ((WP - 14.7)/.445)*.3048 #this gives current depths in meters based off water pressure
-#tO = 0 #time old 
+t = [time.time()]
 CV = ZA*t + 0
-wait(1000)
-O2V = O2P * TV
-#t1 = 1 #current time
-#BRC = (O2VS - O2V)/(t1 - t0)
-#BR.append(BRC)
-#BRA = sum(BR)/len(BR)
-#t0 = t1
-
-
+O2V = O2P
+ATT = AT/BRA #Ascent time in min
+RD = ATT/.9 #recomended depth in meters
+i = 0
 
 while (DT > 0)
-    #ZA = sensor
-    #WP = sensor
-    #O2P = sensor
+    i = i+1
+    t.append(time.time())
+    BRC = (
     CV = ZA*t + CV
     CD = ((WP - 14.7)/.445)*.3048
-    DT = O2V - 2*O2VS/3
-    if CV > RDR
-        WV = TRUE
+    DT = O2PI
+    
     print("screen 1: Velocity "&CV)
     print("screen 2: Depth "&CD)
     print("screen 3: Descent Time "&DT)
+    if CV > RDR
+        WV = TRUE
     if RD <= CD
         WD = TRUE
     if WV == TRUE
