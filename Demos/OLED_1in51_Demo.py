@@ -3,6 +3,7 @@
 
 import sys
 import os
+import numpy
 picdir = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'pic')
 libdir = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'lib')
 if os.path.exists(libdir):
@@ -51,6 +52,7 @@ try:
         draw.line([(127,0),(127,63)], fill = 0)
         draw.text((20,0), Screen, font = font1, fill = 0)
         draw.text((20,24), Message, font = font2, fill = 0)
+        image = image.rotate(180)
         
         for i in range(5):
             disp4.clear()
@@ -62,6 +64,8 @@ try:
     count = 1
     lastAccel = accelerometer.acceleration[2]
     lastTime = time.time()
+    Oxygenflag = False
+    Warningtorun = True
     for i in range(loopend):
         image1 = Image.new('1', (disp1.width, disp1.height), "WHITE")
         image2 = Image.new('1', (disp2.width, disp2.height), "WHITE")
@@ -95,7 +99,7 @@ try:
         
         Waterpress = adc.read_adc(0, gain=GAIN) *0.001-0.248
         
-        Waterpress = Waterpress * (4.096/231)
+        Waterpress = Waterpress * (4.096/2)
         
         Accel = accelerometer.acceleration[2]
         
@@ -103,23 +107,45 @@ try:
         DeltaA = (Accel-lastAccel)/DeltaTime
         
         logging.info ("***draw text")
-        draw1.text((20,0), 'WaterPressure', font = font1, fill = 0)
-        draw1.text((20,24), str(Waterpress), font = font2, fill = 0)
+        draw1.text((20,0), 'Depth: ', font = font1, fill = 0)
+        draw1.text((20,24), str(numpy.round(Waterpress)), font = font2, fill = 0)
         
-        draw2.text((20,0), 'Accelerometer ', font = font1, fill = 0)
-        draw2.text((20,24), str(DeltaA), font = font2, fill = 0)
+        draw2.text((20,0), 'Velocity: ', font = font1, fill = 0)
+        draw2.text((20,24), str(numpy.round(DeltaA, 4)), font = font2, fill = 0)
         
-        draw3.text((20,0), 'Oxygen Level ', font = font1, fill = 0)
+        draw3.text((20,0), 'O2 Level: ', font = font1, fill = 0)
         draw3.text((20,24), str(100*(loopend-count)/loopend) + '%', font = font2, fill = 0)
         
-        if DeltaA > 0.1:
-             AscentWarning('Warning:', 'Ascending too Quickly')
-        else:
-            draw4.text((20,0), 'Screen 4 ', font = font1, fill = 0)
-            draw4.text((20,24), '<3 <3 <3 ', font = font2, fill = 0)
-            disp4.ShowImage(disp4.getbuffer(image4))
-        #image1 = image1.rotate(180) 
+        if 100*(loopend-count)/loopend < 25:
+            if not(Oxygenflag):
+                AscentWarning('Oxygen Low:', 'Return to Surface')
+                Oxygenflag = True
+            else:
+                draw4.text((20,0), 'Oxygen Low: ', font = font1, fill = 0)
+                draw4.text((20,24), 'Return to Surface ', font = font2, fill = 0)
+                draw4.text((20,34), 'Remaining Descent Time: ', font = font2, fill = 0)
+                draw4.text((20,44), str(numpy.round((loopend-count)*1.2/60,1)) + ' Minutes ', font = font2, fill = 0)
+                image4 = image4.rotate(180)
+                disp4.ShowImage(disp4.getbuffer(image4))
         
+        if DeltaA > 0.075:
+             if Warningtorun:
+                 
+                AscentWarning('Warning:', 'Ascending too Quickly')
+                Warningtorun = False
+             else:
+                AscentWarning('Warning:', 'Stop Ascending')
+                Warningtorun = True
+        elif not(Oxygenflag):
+            draw4.text((20,0), 'Remaining Descent Time: ', font = font1, fill = 0)
+            draw4.text((20,24), str(numpy.round((loopend-count)*1.2/60,1)) + ' Minutes ', font = font2, fill = 0)
+            image4 = image4.rotate(180)
+            disp4.ShowImage(disp4.getbuffer(image4))
+            
+            
+        image1 = image1.rotate(180) 
+        #image2 = image2.rotate(180)
+        #image3 = image3.rotate(180)
         
         disp1.ShowImage(disp1.getbuffer(image1))
         disp2.ShowImage(disp2.getbuffer(image2))
@@ -156,11 +182,12 @@ try:
     disp2.clear()
     disp3.clear()
     disp4.clear()
+    Oxygenflag = False
 
 except IOError as e:
     logging.info(e)
     
 except KeyboardInterrupt:    
     logging.info("ctrl + c:")
-    disp.module_exit()
+    
     exit()
